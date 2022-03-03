@@ -1,0 +1,60 @@
+service: inside-out-demo-app
+frameworkVersion: "3"
+variablesResolutionMode: 20210326
+
+package:
+  individually: true  # function の関数を個別にパッケージを行うかどうか
+
+provider:
+  name: aws
+  runtime: python3.8
+  region: ap-northeast-1
+  stage: dev
+  lambdaHashingVersion: "20201221"
+
+plugins:
+  - serverless-python-requirements
+  - serverless-newrelic-lambda-layers
+
+custom:
+  pythonRequirements:
+    fileName: ./docker/requirements.txt
+    dockerizePip: true
+    layer:
+      name: ${self:service}-layer
+      description: Inside Out Demo App Layer
+      compatibleRuntimes:
+        - python3.8
+  newRelic:
+    accountId: 3419505
+    apiKey: NRAK-AEI0JTLLD0WZ1K0ZASDO6V4XDDJ
+    enableExtension: true
+    enableIntegration: true
+    logEnabled: true
+
+functions:
+  app:
+    package:
+      include:
+        - "src/**"
+      exclude:
+        - "requirements.txt"
+        - "package-lock.json"
+        - "package.json"
+        - ".serverless/**"
+        - "__pycache__/**"
+        - "node_modules/**"
+        - "docker/**"
+        - "docker-compose.yml"
+        - "README.md"
+        - "newrelic_log_ingestion/**"
+    handler: src/main.handler
+    events:
+      - http:
+          path: /uuid
+          method: ANY
+    environment:
+      STAGE: ${self:provider.stage}
+    layers:
+      - { Ref: PythonRequirementsLambdaLayer }
+
